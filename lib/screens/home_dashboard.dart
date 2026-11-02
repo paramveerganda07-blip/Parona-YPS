@@ -592,7 +592,7 @@ class HomeDashboard extends ConsumerWidget {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      "Patiala • Vidya Vichari Ta Parupkari",
+                      "Vidya • Vinay • Veerta",
                       style: TextStyle(
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
