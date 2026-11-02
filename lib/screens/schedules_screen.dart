@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../screens/app_theme.dart';
 import '../screens/glass_card.dart';
 import 'home_dashboard.dart';
@@ -28,7 +29,10 @@ class SchedulesScreen extends ConsumerWidget {
             backgroundColor: YPSColors.primaryMaroon,
             pinned: true,
             elevation: 4,
-            leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () => Navigator.pop(context)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.white), 
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 48, bottom: 14),
               title: FittedBox(
@@ -67,13 +71,40 @@ class SchedulesScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+                tooltip: 'Home Dashboard',
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                  (route) => false,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           
           eventsAsync.when(
-            loading: () => const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(top: 100), child: Center(child: CircularProgressIndicator(color: YPSColors.primaryMaroon)))),
-            error: (err, stack) => const SliverToBoxAdapter(child: Center(child: Text("Failed to load schedules.", style: YPSTypography.bodyElegant))),
+            loading: () => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(top: 100), 
+                child: Center(child: CircularProgressIndicator(color: YPSColors.primaryMaroon)),
+              ),
+            ),
+            error: (err, stack) => const SliverToBoxAdapter(
+              child: Center(child: Text("Failed to load schedules.", style: YPSTypography.bodyElegant)),
+            ),
             data: (events) {
-              if (events.isEmpty) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.only(top: 100), child: Text("No upcoming schedules.", style: YPSTypography.bodyElegant))));
+              if (events.isEmpty) {
+                return const SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 100), 
+                      child: Text("No upcoming schedules.", style: YPSTypography.bodyElegant),
+                    ),
+                  ),
+                );
+              }
 
               final screenWidth = MediaQuery.sizeOf(context).width;
               final bool isSmallPhone = screenWidth < 360;
@@ -255,6 +286,15 @@ class _ExpandableTimelineItem extends StatefulWidget {
 class _ExpandableTimelineItemState extends State<_ExpandableTimelineItem> {
   bool _isExpanded = true;
 
+  // HELPER: Safely dials numbers on tap
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final clean = phoneNumber.trim().replaceAll(' ', '').replaceAll('-', '');
+    final uri = Uri(scheme: 'tel', path: clean);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   // HELPER: Generates consistent House colors based on the student's name length
   Map<String, dynamic> _getHouseData(String name) {
     final houses = [
@@ -327,341 +367,433 @@ class _ExpandableTimelineItemState extends State<_ExpandableTimelineItem> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              // HEADER SECTION with Integrated Time Badge
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isLive ? YPSColors.primaryMaroon.withValues(alpha: 0.1) : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isLive ? YPSColors.primaryMaroon.withValues(alpha: 0.3) : Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 13,
-                                    color: isLive ? YPSColors.primaryMaroon : YPSColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    timeOnly,
-                                    style: TextStyle(
-                                      color: isLive ? YPSColors.primaryMaroon : YPSColors.textSecondary,
-                                      fontWeight: isLive ? FontWeight.bold : FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isLive) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: YPSColors.alertRed.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: YPSColors.alertRed, width: 0.5),
-                                ),
-                                child: const Text("HAPPENING NOW", style: TextStyle(color: YPSColors.alertRed, fontSize: 9, fontWeight: FontWeight.bold)),
-                              ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(duration: 800.ms),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(widget.event.title, style: const TextStyle(color: YPSColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, color: YPSColors.primaryMaroon, size: 14),
-                            const SizedBox(width: 4),
-                            Expanded(child: Text(widget.event.venue, style: const TextStyle(color: YPSColors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: YPSColors.textSecondary),
-                    onPressed: () => setState(() => _isExpanded = !_isExpanded),
-                  ),
-                ],
-              ),
-                      
-                      // EXPANDED DETAILS SECTION
-                      AnimatedCrossFade(
-                        firstChild: const SizedBox(width: double.infinity, height: 0),
-                        secondChild: Column(
+                  // HEADER SECTION with Integrated Time Badge
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 16),
-                            Divider(color: Colors.grey.shade200),
-                            const SizedBox(height: 12),
-                            
-                            // Event Stats Row (Wraps cleanly on small screens)
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
+                            Row(
                               children: [
-                                _buildStatBadge(Icons.timer_outlined, "$timeOnly - $endTimeStr"),
-                                _buildStatBadge(Icons.groups_outlined, "$participantCount Participants"),
-                                if ((widget.event.entryGate ?? '').isNotEmpty)
-                                  _buildStatBadge(Icons.meeting_room_outlined, "Gate: ${widget.event.entryGate}"),
-                                if ((widget.event.organiser ?? '').isNotEmpty)
-                                  _buildStatBadge(Icons.person_outline, "Organiser: ${widget.event.organiser}"),
-                                if ((widget.event.dressCode ?? '').isNotEmpty)
-                                  _buildStatBadge(Icons.checkroom_outlined, "Dress: ${widget.event.dressCode}"),
-                                if ((widget.event.medicalContact ?? '').isNotEmpty)
-                                  _buildStatBadge(Icons.medical_services_outlined, "SOS: ${widget.event.medicalContact}"),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isLive ? YPSColors.primaryMaroon.withValues(alpha: 0.1) : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isLive ? YPSColors.primaryMaroon.withValues(alpha: 0.3) : Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 13,
+                                        color: isLive ? YPSColors.primaryMaroon : YPSColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        timeOnly,
+                                        style: TextStyle(
+                                          color: isLive ? YPSColors.primaryMaroon : YPSColors.textSecondary,
+                                          fontWeight: isLive ? FontWeight.bold : FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isLive) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: YPSColors.alertRed.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: YPSColors.alertRed, width: 0.5),
+                                    ),
+                                    child: const Text("HAPPENING NOW", style: TextStyle(color: YPSColors.alertRed, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(duration: 800.ms),
+                                ],
                               ],
                             ),
+                            const SizedBox(height: 10),
+                            Text(widget.event.title, style: const TextStyle(color: YPSColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: YPSColors.primaryMaroon, size: 14),
+                                const SizedBox(width: 4),
+                                Expanded(child: Text(widget.event.venue, style: const TextStyle(color: YPSColors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: YPSColors.textSecondary),
+                        onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                      ),
+                    ],
+                  ),
+                          
+                  // EXPANDED DETAILS SECTION
+                  AnimatedCrossFade(
+                    firstChild: const SizedBox(width: double.infinity, height: 0),
+                    secondChild: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        Divider(color: Colors.grey.shade200),
+                        const SizedBox(height: 12),
+                        
+                        // Event Stats Row (Wraps cleanly on small screens)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildStatBadge(Icons.timer_outlined, "$timeOnly - $endTimeStr"),
+                            _buildStatBadge(Icons.groups_outlined, "$participantCount Participants"),
+                            if ((widget.event.entryGate ?? '').isNotEmpty)
+                              _buildStatBadge(Icons.meeting_room_outlined, "Gate: ${widget.event.entryGate}"),
+                            if ((widget.event.organiser ?? '').isNotEmpty)
+                              _buildStatBadge(Icons.person_outline, "Organiser: ${widget.event.organiser}"),
+                            if ((widget.event.dressCode ?? '').isNotEmpty)
+                              _buildStatBadge(Icons.checkroom_outlined, "Dress: ${widget.event.dressCode}"),
+                            if ((widget.event.medicalContact ?? '').isNotEmpty)
+                              _buildStatBadge(Icons.medical_services_outlined, "SOS Helpline Active"),
+                          ],
+                        ),
 
-                            if (widget.event.description.trim().isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                widget.event.description,
-                                style: const TextStyle(
-                                  color: YPSColors.textSecondary,
-                                  fontSize: 13,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
+                        if (widget.event.description.trim().isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.event.description,
+                            style: const TextStyle(
+                              color: YPSColors.textSecondary,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
 
-                            // Event Medical Room Banner (Displayed in Schedules Screen with backend photo & emergency hotline)
-                            Builder(
-                              builder: (context) {
-                                final String medicalPhoto = (widget.event.medicalRoomPhotoUrl != null && widget.event.medicalRoomPhotoUrl!.trim().isNotEmpty)
-                                    ? widget.event.medicalRoomPhotoUrl!
-                                    : '${ApiConstants.baseUrl}/media/event_medical/950d98ba-01b5-4fe4-b4a8-d9b4ea553b75.jpg';
+                        // Event Medical Room Banner (Displayed in Schedules Screen with un-squished clean layout)
+                        Builder(
+                          builder: (context) {
+                            final String medicalPhoto = (widget.event.medicalRoomPhotoUrl != null && widget.event.medicalRoomPhotoUrl!.trim().isNotEmpty)
+                                ? widget.event.medicalRoomPhotoUrl!
+                                : '${ApiConstants.baseUrl}/media/event_medical/950d98ba-01b5-4fe4-b4a8-d9b4ea553b75.jpg';
 
-                                final String medicalInstructions = (widget.event.medicalInstructions != null && widget.event.medicalInstructions!.trim().isNotEmpty)
-                                    ? widget.event.medicalInstructions!
-                                    : 'In case of any medical need or feeling unwell, visit the First Aid Station or inform nearest staff immediately. Campus ambulance is on standby.';
+                            final String medicalInstructions = (widget.event.medicalInstructions != null && widget.event.medicalInstructions!.trim().isNotEmpty)
+                                ? widget.event.medicalInstructions!
+                                : 'In case of any medical need or feeling unwell, visit the First Aid Station or inform nearest staff immediately. Campus ambulance is on standby.';
 
-                                final String medicalContact = (widget.event.medicalContact != null && widget.event.medicalContact!.trim().isNotEmpty)
-                                    ? widget.event.medicalContact!
-                                    : '7009565809, 9876962894, 9888969677';
+                            final String medicalContact = (widget.event.medicalContact != null && widget.event.medicalContact!.trim().isNotEmpty)
+                                ? widget.event.medicalContact!
+                                : '7009565809, 9876962894, 9888969677';
 
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 14),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: YPSColors.primaryMaroon.withValues(alpha: 0.2)),
+                            final contactList = medicalContact.split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 14),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: YPSColors.primaryMaroon.withValues(alpha: 0.2)),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Image.network(
+                                        medicalPhoto.startsWith('http')
+                                            ? medicalPhoto
+                                            : '${ApiConstants.baseUrl}$medicalPhoto',
+                                        height: 140,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
                                       ),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Image.network(
-                                            medicalPhoto.startsWith('http')
-                                                ? medicalPhoto
-                                                : '${ApiConstants.baseUrl}$medicalPhoto',
-                                            height: 140,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                            color: YPSColors.surfaceWhite,
-                                            child: Row(
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        color: YPSColors.surfaceWhite,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Row(
                                               children: [
-                                                const Icon(Icons.local_hospital, color: YPSColors.alertRed, size: 16),
-                                                const SizedBox(width: 8),
-                                                const Expanded(
+                                                Icon(Icons.local_hospital, color: YPSColors.alertRed, size: 16),
+                                                SizedBox(width: 8),
+                                                Expanded(
                                                   child: Text(
                                                     "Event Medical Room / First Aid Station",
-                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: YPSColors.textPrimary),
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold, 
+                                                      fontSize: 13, 
+                                                      color: YPSColors.textPrimary,
+                                                    ),
                                                   ),
                                                 ),
-                                                Text(
-                                                  medicalContact,
-                                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: YPSColors.alertRed),
-                                                ),
                                               ],
                                             ),
-                                          ),
-                                        ],
+                                            if (contactList.isNotEmpty) ...[
+                                              const SizedBox(height: 8),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 6,
+                                                children: contactList.map((phone) {
+                                                  return InkWell(
+                                                    onTap: () => _makePhoneCall(phone),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                                      decoration: BoxDecoration(
+                                                        color: YPSColors.alertRed.withValues(alpha: 0.08),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(color: YPSColors.alertRed.withValues(alpha: 0.25)),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(Icons.call, color: YPSColors.alertRed, size: 12),
+                                                          const SizedBox(width: 5),
+                                                          Text(
+                                                            phone,
+                                                            style: const TextStyle(
+                                                              color: YPSColors.alertRed,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: YPSColors.alertRed.withValues(alpha: 0.05),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: YPSColors.alertRed.withValues(alpha: 0.2)),
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Icon(Icons.health_and_safety_outlined, color: YPSColors.alertRed, size: 18),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  "Medical & First Aid Instructions:",
-                                                  style: TextStyle(color: YPSColors.alertRed, fontWeight: FontWeight.bold, fontSize: 12),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  medicalInstructions,
-                                                  style: const TextStyle(color: YPSColors.textPrimary, fontSize: 12, height: 1.4),
-                                                ),
-                                              ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: YPSColors.alertRed.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: YPSColors.alertRed.withValues(alpha: 0.2)),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.health_and_safety_outlined, color: YPSColors.alertRed, size: 18),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              "Medical & First Aid Instructions:",
+                                              style: TextStyle(color: YPSColors.alertRed, fontWeight: FontWeight.bold, fontSize: 12),
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              medicalInstructions,
+                                              style: const TextStyle(color: YPSColors.textPrimary, fontSize: 12, height: 1.4),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
 
-                            const SizedBox(height: 20),
-                            
-                            // Schedules & Performance Timeline (Separate schedules field)
-                            const Text(
+                        const SizedBox(height: 20),
+                        
+                        // Schedules & Performance Timeline (28 Sports Day Itinerary Items)
+                        const Row(
+                          children: [
+                            Icon(Icons.format_list_numbered_rounded, size: 18, color: YPSColors.primaryMaroon),
+                            SizedBox(width: 8),
+                            Text(
                               "Schedule & Performance Sequence", 
                               style: TextStyle(
                                 color: YPSColors.textPrimary, 
                                 fontWeight: FontWeight.bold, 
-                                fontSize: 14,
+                                fontSize: 15,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Builder(
-                              builder: (context) {
-                                final List<dynamic> scheduleItems = _resolveScheduleItems(widget.event);
-
-                                if (scheduleItems.isNotEmpty) {
-                                  return Column(
-                                    children: scheduleItems.map((item) {
-                                      final timeStr = item['time']?.toString() ?? '';
-                                      final titleStr = item['title']?.toString() ?? '';
-                                      final subtitleStr = item['subtitle']?.toString() ?? '';
-
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 10.0),
-                                        child: Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: YPSColors.primaryMaroon.withValues(alpha: 0.08),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                timeStr, 
-                                                style: const TextStyle(
-                                                  color: YPSColors.primaryMaroon, 
-                                                  fontWeight: FontWeight.bold, 
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    titleStr, 
-                                                    style: const TextStyle(
-                                                      color: YPSColors.textPrimary, 
-                                                      fontSize: 13, 
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  if (subtitleStr.isNotEmpty)
-                                                    Text(
-                                                      subtitleStr, 
-                                                      style: const TextStyle(
-                                                        color: YPSColors.textSecondary, 
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  );
-                                }
-                                return const Text(
-                                  "Schedule timeline will be published shortly.", 
-                                  style: TextStyle(
-                                    color: YPSColors.textSecondary, 
-                                    fontSize: 12, 
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                );
-                              },
-                            ),
-                            
-                            // STUDENT ROSTER (Only displayed when participants list is populated)
-                            if (studentNames.isNotEmpty) ...[
-                              const SizedBox(height: 20),
-                              const Text("Featured Participants", style: TextStyle(color: YPSColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
-                              const SizedBox(height: 12),
-                              ...studentNames.map((name) {
-                                final houseData = _getHouseData(name);
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12.0),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: (houseData['color'] as Color).withValues(alpha: 0.15),
-                                        child: Text(houseData['code'], style: TextStyle(color: houseData['color'], fontSize: 9, fontWeight: FontWeight.bold)),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(name, style: const TextStyle(color: YPSColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
-                                      )
-                                    ],
-                                  ),
-                                );
-                              }),
-                            ],
                           ],
                         ),
-                        crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                        duration: const Duration(milliseconds: 300),
-                        sizeCurve: Curves.easeInOut,
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        Builder(
+                          builder: (context) {
+                            final List<dynamic> scheduleItems = _resolveScheduleItems(widget.event);
+
+                            if (scheduleItems.isNotEmpty) {
+                              return Column(
+                                children: scheduleItems.asMap().entries.map((entry) {
+                                  final int itemIndex = entry.key + 1;
+                                  final item = entry.value;
+
+                                  String timeStr = '';
+                                  String titleStr = '';
+                                  String subtitleStr = '';
+
+                                  if (item is Map) {
+                                    timeStr = item['time']?.toString() ?? '';
+                                    titleStr = item['title']?.toString() ?? item['name']?.toString() ?? '';
+                                    subtitleStr = item['subtitle']?.toString() ?? '';
+                                  } else if (item is String) {
+                                    titleStr = item;
+                                  }
+
+                                  // Append PM cleanly if time is just '3:45'
+                                  String formattedTime = timeStr.trim();
+                                  if (formattedTime.isNotEmpty &&
+                                      !formattedTime.toUpperCase().contains('AM') &&
+                                      !formattedTime.toUpperCase().contains('PM')) {
+                                    formattedTime = '$formattedTime PM';
+                                  }
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10.0),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 26,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: YPSColors.primaryMaroon.withValues(alpha: 0.08),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: YPSColors.primaryMaroon.withValues(alpha: 0.15)),
+                                          ),
+                                          child: Text(
+                                            "#$itemIndex",
+                                            style: const TextStyle(
+                                              color: YPSColors.primaryMaroon,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        if (formattedTime.isNotEmpty) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: YPSColors.heritageGold.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: YPSColors.heritageGold.withValues(alpha: 0.3)),
+                                            ),
+                                            child: Text(
+                                              formattedTime, 
+                                              style: const TextStyle(
+                                                color: YPSColors.primaryMaroon, 
+                                                fontWeight: FontWeight.bold, 
+                                                fontSize: 11.5,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                        ],
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                titleStr, 
+                                                style: const TextStyle(
+                                                  color: YPSColors.textPrimary, 
+                                                  fontSize: 13.5, 
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              if (subtitleStr.isNotEmpty) ...[
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  subtitleStr, 
+                                                  style: const TextStyle(
+                                                    color: YPSColors.textSecondary, 
+                                                    fontSize: 11.5,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            }
+                            return const Text(
+                              "Schedule timeline will be published shortly.", 
+                              style: TextStyle(
+                                color: YPSColors.textSecondary, 
+                                fontSize: 12, 
+                                fontStyle: FontStyle.italic,
+                              ),
+                            );
+                          },
+                        ),
+                        
+                        // STUDENT ROSTER (Only displayed when participants list is populated)
+                        if (studentNames.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          const Text("Featured Participants", style: TextStyle(color: YPSColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 12),
+                          ...studentNames.map((name) {
+                            final houseData = _getHouseData(name);
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: (houseData['color'] as Color).withValues(alpha: 0.15),
+                                    child: Text(houseData['code'], style: TextStyle(color: houseData['color'], fontSize: 9, fontWeight: FontWeight.bold)),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(name, style: const TextStyle(color: YPSColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+                                  )
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                    crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 300),
+                    sizeCurve: Curves.easeInOut,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      }
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildStatBadge(IconData icon, String text) {
     return Container(

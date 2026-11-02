@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../screens/app_theme.dart';
 import '../screens/glass_card.dart';
+import '../screens/home_dashboard.dart';
 import '../screens/events_screen.dart';
 import '../screens/achievers_screen.dart';
 import '../screens/parking_screen.dart';
@@ -213,6 +214,55 @@ class QuickActionsBottomBar extends StatelessWidget {
             ).animate().fade(delay: (200 + (index * 60)).ms).slideY(begin: 0.1);
           },
         ),
+
+        // Prominent Return to Home Dashboard button on all sub-screens
+        if (currentScreen != null && currentScreen != 'home') ...[
+          const SizedBox(height: 18),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                  (route) => false,
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                decoration: BoxDecoration(
+                  color: YPSColors.primaryMaroon.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: YPSColors.primaryMaroon.withValues(alpha: 0.25), width: 1.2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: YPSColors.primaryMaroon,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.home_rounded, color: Colors.white, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Return to Home Dashboard",
+                      style: TextStyle(
+                        color: YPSColors.primaryMaroon,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ).animate().fade(delay: 350.ms).slideY(begin: 0.1),
+        ],
       ],
     );
   }

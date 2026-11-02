@@ -8,6 +8,7 @@ import '../screens/glass_card.dart';
 import 'package:merit/services/auth_storage.dart';
 import 'package:merit/utils/logger.dart';
 import 'package:merit/constants.dart';
+import 'home_dashboard.dart';
 import '../widgets/quick_actions_bottom_bar.dart';
 import '../widgets/yps_crest_widget.dart';
 
@@ -37,7 +38,6 @@ class _MedicalScreenState extends State<MedicalScreen> {
     try {
       final token = await AuthStorage.getToken();
       
-      // Ensure you create this endpoint in your Django views.py
       final url = Uri.parse('${ApiConstants.baseUrl}/api/medical-centers/');
       logger.d("DEBUG [Medical]: URL is $url");
 
@@ -115,18 +115,22 @@ class _MedicalScreenState extends State<MedicalScreen> {
     }
   }
 
-  // Function to actually open the phone's dialer
+  // Function to open the phone dialer safely for individual numbers
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    logger.d("DEBUG [Medical]: Attempting to dial $phoneNumber");
+    final cleanNumber = phoneNumber.trim().replaceAll(' ', '').replaceAll('-', '');
+    final Uri launchUri = Uri(scheme: 'tel', path: cleanNumber);
+    logger.d("DEBUG [Medical]: Attempting to dial $cleanNumber");
     
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     } else {
-      logger.d("DEBUG [Medical]: Cannot launch dialer for $phoneNumber");
+      logger.d("DEBUG [Medical]: Cannot launch dialer for $cleanNumber");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Unable to open phone dialer."), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("Unable to open phone dialer for $cleanNumber."),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -182,6 +186,17 @@ class _MedicalScreenState extends State<MedicalScreen> {
               icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+                tooltip: 'Home Dashboard',
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                  (route) => false,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           
           if (_isLoading)
@@ -200,44 +215,95 @@ class _MedicalScreenState extends State<MedicalScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // --- PULSING EMERGENCY BUTTON ---
-                    GestureDetector(
-                      onTap: () => _makePhoneCall(_emergencyPhone),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: YPSColors.surfaceWhite,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: YPSColors.alertRed.withValues(alpha: 0.5), width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: YPSColors.alertRed.withValues(alpha: 0.15),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 8),
-                            )
-                          ]
-                        ),
-                        child: Row(
+                    Builder(
+                      builder: (context) {
+                        final emergencyList = _emergencyPhone
+                            .split(',')
+                            .map((p) => p.trim())
+                            .where((p) => p.isNotEmpty)
+                            .toList();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(color: YPSColors.alertRed, shape: BoxShape.circle),
-                              child: const Icon(Icons.emergency, color: Colors.white),
-                            ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1)),
-                            const SizedBox(width: 20),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Emergency SOS", style: YPSTypography.cinematicHeader.copyWith(fontSize: 22, color: YPSColors.alertRed)),
-                                const SizedBox(height: 4),
-                                const Text("Tap to call Campus Nurse", style: YPSTypography.bodyElegant),
-                              ],
-                            ),
+                            GestureDetector(
+                              onTap: () {
+                                if (emergencyList.isNotEmpty) {
+                                  _makePhoneCall(emergencyList.first);
+                                }
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(22),
+                                decoration: BoxDecoration(
+                                  color: YPSColors.surfaceWhite,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: YPSColors.alertRed.withValues(alpha: 0.5), width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: YPSColors.alertRed.withValues(alpha: 0.15),
+                                      blurRadius: 20,
+                                      spreadRadius: 2,
+                                      offset: const Offset(0, 8),
+                                    )
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: const BoxDecoration(color: YPSColors.alertRed, shape: BoxShape.circle),
+                                      child: const Icon(Icons.emergency, color: Colors.white, size: 26),
+                                    ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.08, 1.08)),
+                                    const SizedBox(width: 18),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text("Emergency SOS", style: YPSTypography.cinematicHeader.copyWith(fontSize: 22, color: YPSColors.alertRed)),
+                                          const SizedBox(height: 4),
+                                          const Text("Tap to call Campus Medical Team", style: YPSTypography.bodyElegant),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ).animate().fade().slideY(begin: 0.1),
+
+                            if (emergencyList.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: emergencyList.map((p) => InkWell(
+                                  onTap: () => _makePhoneCall(p),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: YPSColors.alertRed.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: YPSColors.alertRed.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.phone_forwarded, color: YPSColors.alertRed, size: 13),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          p,
+                                          style: const TextStyle(color: YPSColors.alertRed, fontWeight: FontWeight.bold, fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )).toList(),
+                              ),
+                            ],
                           ],
-                        ),
-                      ),
-                    ).animate().fade().slideY(begin: 0.1),
+                        );
+                      },
+                    ),
                     
                     if (_medicalRoomPhotoUrl != null && _medicalRoomPhotoUrl!.isNotEmpty) ...[
                       const SizedBox(height: 28),
@@ -369,6 +435,8 @@ class _MedicalScreenState extends State<MedicalScreen> {
   }
 
   Widget _buildMedicalFacilityCard(String title, String location, String contact, String phone) {
+    final phoneNumbers = phone.split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+
     return GlassCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -377,7 +445,16 @@ class _MedicalScreenState extends State<MedicalScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: YPSColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+              Expanded(
+                child: Text(
+                  title, 
+                  style: const TextStyle(
+                    color: YPSColors.textPrimary, 
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               const Icon(Icons.directions, color: YPSColors.primaryMaroon),
             ],
           ),
@@ -393,35 +470,67 @@ class _MedicalScreenState extends State<MedicalScreen> {
           Divider(color: Colors.grey.shade200),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Coordinator", style: TextStyle(color: YPSColors.textSecondary, fontSize: 12)),
-                  const SizedBox(height: 2),
-                  Text(contact, style: const TextStyle(color: YPSColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
-                ],
+              const Icon(Icons.person_outline, size: 16, color: YPSColors.textSecondary),
+              const SizedBox(width: 6),
+              const Text(
+                "Coordinator: ", 
+                style: TextStyle(color: YPSColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
               ),
-              GestureDetector(
-                onTap: () => _makePhoneCall(phone), // Make the facility pill clickable too
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: YPSColors.primaryMaroon.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.call, color: YPSColors.primaryMaroon, size: 16),
-                      const SizedBox(width: 8),
-                      Text(phone, style: const TextStyle(color: YPSColors.primaryMaroon, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+              Expanded(
+                child: Text(
+                  contact, 
+                  style: const TextStyle(color: YPSColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5),
                 ),
-              )
+              ),
             ],
-          )
+          ),
+          if (phoneNumbers.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text(
+              "Direct Medical Lines (Tap to dial):",
+              style: TextStyle(
+                color: YPSColors.textSecondary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: phoneNumbers.map((numStr) {
+                return InkWell(
+                  onTap: () => _makePhoneCall(numStr),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: YPSColors.primaryMaroon.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: YPSColors.primaryMaroon.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.call, color: YPSColors.primaryMaroon, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          numStr,
+                          style: const TextStyle(
+                            color: YPSColors.primaryMaroon,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );

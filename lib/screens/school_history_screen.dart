@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../screens/app_theme.dart';
 import '../screens/glass_card.dart';
+import 'home_dashboard.dart';
 
 class SchoolHistoryScreen extends StatelessWidget {
   const SchoolHistoryScreen({super.key});
@@ -86,6 +87,17 @@ class SchoolHistoryScreen extends StatelessWidget {
               ),
             ),
             leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () => Navigator.pop(context)),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+                tooltip: 'Home Dashboard',
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                  (route) => false,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(

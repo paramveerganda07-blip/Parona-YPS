@@ -9,6 +9,7 @@ import '../screens/glass_card.dart';
 import '../constants.dart';
 import 'achievers_screen.dart';
 import 'parking_screen.dart';
+import 'home_dashboard.dart';
 
 final singleEventProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
   final url = ApiConstants.buildUri('events/$id/');
@@ -137,6 +138,21 @@ class EventDetailsScreen extends ConsumerWidget {
                   decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                   child: IconButton(icon: const Icon(Icons.arrow_back_ios_new, color: YPSColors.primaryMaroon, size: 18), onPressed: () => Navigator.pop(context)),
                 ),
+                actions: [
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: IconButton(
+                      icon: const Icon(Icons.home_rounded, color: YPSColors.primaryMaroon, size: 20),
+                      tooltip: 'Home Dashboard',
+                      onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                        (route) => false,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
               ),
               
               SliverToBoxAdapter(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:merit/utils/http_client.dart' as http;
 import '../constants.dart';
+import 'home_dashboard.dart';
 import '../screens/app_theme.dart';
 import '../screens/glass_card.dart';
 import '../widgets/quick_actions_bottom_bar.dart';
@@ -125,6 +126,17 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+                tooltip: 'Home Dashboard',
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                  (route) => false,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 56, bottom: 14),
               title: FittedBox(

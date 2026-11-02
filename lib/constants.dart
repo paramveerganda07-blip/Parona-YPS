@@ -12,7 +12,7 @@ class ApiConstants {
 
   static const int maxOfflineQueueLength = 50;
 
-  static const String privacyPolicyUrl = 'https://hagguggu.github.io/EventManagement/privacy.html';
+  static const String privacyPolicyUrl = 'https://paramveerganda07-blip.github.io/Parona-YPS/privacy.html';
 
   static String get scheme => useTls ? 'https' : 'http';
 

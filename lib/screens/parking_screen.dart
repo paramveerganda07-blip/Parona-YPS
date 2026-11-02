@@ -9,6 +9,7 @@ import 'glass_card.dart';
 import '../constants.dart';
 import 'package:merit/services/auth_storage.dart';
 import 'package:merit/utils/logger.dart';
+import 'home_dashboard.dart';
 import '../widgets/quick_actions_bottom_bar.dart';
 import '../widgets/yps_crest_widget.dart';
 
@@ -83,7 +84,6 @@ class _ParkingScreenState extends State<ParkingScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: YPSColors.backgroundLight,
       body: CustomScrollView(
@@ -136,6 +136,17 @@ class _ParkingScreenState extends State<ParkingScreen> {
                 ),
               ),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+                tooltip: 'Home Dashboard',
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const HomeDashboard()),
+                  (route) => false,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
 
           // INTRO & INTERACTIVE MAP HEADER
@@ -148,36 +159,43 @@ class _ParkingScreenState extends State<ParkingScreen> {
                   if (_isLoading) ...[
                     const LinearProgressIndicator(
                       color: YPSColors.heritageGold,
-                      backgroundColor: YPSColors.primaryMaroon,
+                      backgroundColor: Colors.transparent,
                     ),
                     const SizedBox(height: 12),
                   ],
+
+                  // TITLE & RESET ZOOM ACTION
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Campus Layout & Gates", style: YPSTypography.cinematicHeader),
-                          const SizedBox(height: 4),
-                          Text(_schoolName, style: YPSTypography.bodyElegant),
-                        ],
+                      const Text(
+                        "Campus Parking Map",
+                        style: YPSTypography.cinematicHeader,
                       ),
-                      TextButton.icon(
-                        onPressed: _resetZoom,
-                        icon: const Icon(Icons.zoom_out_map, size: 16, color: YPSColors.primaryMaroon),
-                        label: const Text("Reset Zoom", style: TextStyle(color: YPSColors.primaryMaroon, fontWeight: FontWeight.bold)),
-                      ),
+                      if (_mapUrl != null && _mapUrl!.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: _resetZoom,
+                          icon: const Icon(Icons.refresh, size: 16, color: YPSColors.primaryMaroon),
+                          label: const Text(
+                            "Reset Zoom",
+                            style: TextStyle(color: YPSColors.primaryMaroon, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            backgroundColor: YPSColors.primaryMaroon.withValues(alpha: 0.08),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 14),
 
-                  // INTERACTIVE ZOOMABLE MAP
+                  // PINCH-TO-ZOOM / PAN MAP CONTAINER
                   Container(
-                    height: 280,
                     width: double.infinity,
+                    height: 280,
                     decoration: BoxDecoration(
-                      color: Colors.black,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -286,37 +304,21 @@ class _ParkingScreenState extends State<ParkingScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 28),
 
-                  const Text("", style: YPSTypography.cinematicHeader),
-                  const SizedBox(height: 14),
+                  // Only show header if zones actually exist
+                  if (_zones.isNotEmpty) ...[
+                    const SizedBox(height: 28),
+                    const Text("Designated Parking Zones", style: YPSTypography.cinematicHeader),
+                    const SizedBox(height: 14),
+                  ],
                 ],
               ),
             ),
           ),
 
-          // PARKING ZONES LIST
+          // PARKING ZONES LIST (Empty box with 'P' completely removed as requested)
           if (_zones.isEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: GlassCard(
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
-                    children: [
-                      Icon(Icons.local_parking_outlined, color: Colors.grey.shade400, size: 28),
-                      const SizedBox(width: 14),
-                      const Expanded(
-                        child: Text(
-                          "",
-                          style: TextStyle(color: YPSColors.textSecondary, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
+            const SliverToBoxAdapter(child: SizedBox.shrink())
           else
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -474,9 +476,8 @@ class _ParkingScreenState extends State<ParkingScreen> {
   }
 }
 
-
 // =========================================================================
-// 🎟️ RETAINED TICKET SCREEN (Kept safely so legacy references compile)
+// RETAINED TICKET SCREEN (Kept safely so legacy references compile)
 // =========================================================================
 class TicketScreen extends StatefulWidget {
   final String eventId;
