@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "497415400120",
+    "project_id": "merit-d2a4a",
+    "storage_bucket": "merit-d2a4a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497415400120:android:ce72c4ab1d616a1f5f624d",
+        "android_client_info": {
+          "package_name": "com.example.merit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjRra-taf6dWcVH5RuaZZvUPZDKe5TKmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

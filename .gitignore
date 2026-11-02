@@ -1,0 +1,38 @@
+﻿# Miscellaneous
+*.class
+*.lock
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .dart_tool directory contains generated files
+.dart_tool/
+
+# Symlinks created by flutter packages get
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# The build directory contains compiled output files
+build/
+
+# Android/iOS specific caches and generated files
+android/.gradle/
+android/local.properties
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Pods/
+ios/Runner/GeneratedPluginRegistrant.h
+ios/print_stdout_*.log
